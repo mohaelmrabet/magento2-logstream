@@ -8,14 +8,23 @@ use Monolog\Level;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use CleatSquad\LogStream\Logger\StdoutHandler;
-use Monolog\Logger;
 
-/*
+/**
  * Class StdoutHandlerTest
  * @covers CleatSquad\LogStream\Logger\StdoutHandler
  */
 class StdoutHandlerTest extends TestCase
 {
+    /**
+     * Default INFO log level value
+     */
+    private const DEFAULT_INFO_LEVEL = 200;
+
+    /**
+     * WARNING log level value
+     */
+    private const WARNING_LEVEL = 300;
+
     private function createStdoutHandler(MockObject|null $scopeConfigMock = null): StdoutHandler
     {
         if ($scopeConfigMock === null) {
@@ -53,20 +62,18 @@ class StdoutHandlerTest extends TestCase
     public function testGetLevel(): void
     {
         $handler = $this->createStdoutHandler();
-        $expectedLevel = class_exists(Level::class) ? Level::Info->value : Logger::INFO;
-        $this->assertEquals($expectedLevel, $this->getLevelValue($handler->getLevel()));
+        $this->assertEquals(self::DEFAULT_INFO_LEVEL, $this->getLevelValue($handler->getLevel()));
     }
 
     public function testGetLevelFromConfig(): void
     {
         $scopeConfigMock = $this->createMock(ScopeConfigInterface::class);
-        $warningLevel = class_exists(Level::class) ? Level::Warning->value : Logger::WARNING;
         /** @var MockObject $scopeConfigMock */
         $scopeConfigMock->expects($this->once())
             ->method('getValue')
             ->with('general/logging/log_level', 'website')
-            ->willReturn($warningLevel);
-        $this->assertEquals($warningLevel, $this->getLevelValue($this->createStdoutHandler($scopeConfigMock)->getLevel()));
+            ->willReturn(self::WARNING_LEVEL);
+        $this->assertEquals(self::WARNING_LEVEL, $this->getLevelValue($this->createStdoutHandler($scopeConfigMock)->getLevel()));
     }
 
     public function testGetBubble(): void
