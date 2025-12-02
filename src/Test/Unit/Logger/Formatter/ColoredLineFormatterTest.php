@@ -21,7 +21,7 @@ class ColoredLineFormatterTest extends TestCase
     {
         // Disable stack traces for basic color tests
         $this->formatter = new ColoredLineFormatter(
-            includeStacktraces: false
+            includeStacktrace: false
         );
     }
 
@@ -85,7 +85,7 @@ class ColoredLineFormatterTest extends TestCase
 
     public function testStackTraceIncludedForErrorLevelWhenEnabled(): void
     {
-        $formatter = new ColoredLineFormatter(includeStacktraces: true);
+        $formatter = new ColoredLineFormatter(includeStacktrace: true);
         $record = $this->createLogRecord('ERROR', 'Error with trace');
         $output = $formatter->format($record);
 
@@ -97,7 +97,7 @@ class ColoredLineFormatterTest extends TestCase
 
     public function testNoStackTraceForInfoLevel(): void
     {
-        $formatter = new ColoredLineFormatter(includeStacktraces: true);
+        $formatter = new ColoredLineFormatter(includeStacktrace: true);
         $record = $this->createLogRecord('INFO', 'Info message');
         $output = $formatter->format($record);
 

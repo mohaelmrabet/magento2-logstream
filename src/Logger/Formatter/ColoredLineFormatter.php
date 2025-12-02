@@ -55,7 +55,7 @@ class ColoredLineFormatter extends LineFormatter
         ?string $dateFormat = null,
         bool $allowInlineLineBreaks = true,
         bool $ignoreEmptyContextAndExtra = true,
-        bool $includeStacktraces = true
+        bool $includeStacktrace = true
     ) {
         parent::__construct(
             $format ?? self::DEFAULT_FORMAT,
@@ -63,10 +63,10 @@ class ColoredLineFormatter extends LineFormatter
             $allowInlineLineBreaks,
             $ignoreEmptyContextAndExtra
         );
-        $this->addStackTraces = $includeStacktraces;
-        
+        $this->addStackTraces = $includeStacktrace;
+
         // Enable stack traces in parent formatter for exceptions
-        if ($includeStacktraces) {
+        if ($includeStacktrace) {
             $this->includeStacktraces(true);
         }
     }
@@ -96,7 +96,7 @@ class ColoredLineFormatter extends LineFormatter
         // Add stack trace for error-level logs if no exception in context
         if ($this->addStackTraces && $levelValue >= self::TRACE_MIN_LEVEL) {
             $hasException = $this->hasException($context);
-            
+
             if (!$hasException) {
                 // Generate stack trace for errors without exceptions
                 $trace = $this->generateStackTrace();
@@ -138,7 +138,7 @@ class ColoredLineFormatter extends LineFormatter
     {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
         $lines = [];
-        
+
         // Skip internal Monolog/logging frames
         $skipPrefixes = [
             'Monolog\\',
@@ -148,7 +148,7 @@ class ColoredLineFormatter extends LineFormatter
 
         foreach ($trace as $frame) {
             $class = $frame['class'] ?? '';
-            
+
             // Skip internal logging frames
             $skip = false;
             foreach ($skipPrefixes as $prefix) {
@@ -157,24 +157,24 @@ class ColoredLineFormatter extends LineFormatter
                     break;
                 }
             }
-            
+
             if ($skip) {
                 continue;
             }
-            
+
             $file = $frame['file'] ?? 'unknown';
             $line = $frame['line'] ?? 0;
             $function = $frame['function'] ?? 'unknown';
-            
+
             if ($class !== '') {
                 $function = $class . ($frame['type'] ?? '::') . $function;
             }
-            
+
             // Shorten file path for readability
             $file = $this->shortenPath($file);
-            
+
             $lines[] = sprintf("  #%d %s:%d %s()", count($lines), $file, $line, $function);
-            
+
             // Limit stack trace depth
             if (count($lines) >= 8) {
                 break;
