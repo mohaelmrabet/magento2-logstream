@@ -19,7 +19,10 @@ class ColoredLineFormatterTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->formatter = new ColoredLineFormatter();
+        // Disable stack traces for basic color tests
+        $this->formatter = new ColoredLineFormatter(
+            includeStacktraces: false
+        );
     }
 
     public function testFormatterIsInstanceOfLineFormatter(): void
@@ -78,6 +81,30 @@ class ColoredLineFormatterTest extends TestCase
         // Check that output contains magenta ANSI code
         $this->assertStringContainsString("\033[35m", $output);
         $this->assertStringContainsString('Critical message', $output);
+    }
+
+    public function testStackTraceIncludedForErrorLevelWhenEnabled(): void
+    {
+        $formatter = new ColoredLineFormatter(includeStacktraces: true);
+        $record = $this->createLogRecord('ERROR', 'Error with trace');
+        $output = $formatter->format($record);
+
+        // Check that output contains message
+        $this->assertStringContainsString('Error with trace', $output);
+        // Stack trace should include dim color code
+        $this->assertStringContainsString("\033[2m", $output);
+    }
+
+    public function testNoStackTraceForInfoLevel(): void
+    {
+        $formatter = new ColoredLineFormatter(includeStacktraces: true);
+        $record = $this->createLogRecord('INFO', 'Info message');
+        $output = $formatter->format($record);
+
+        // Check that output contains message
+        $this->assertStringContainsString('Info message', $output);
+        // No stack trace (dim color code) for INFO level
+        $this->assertStringNotContainsString("\033[2m", $output);
     }
 
     /**

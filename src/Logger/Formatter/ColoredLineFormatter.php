@@ -10,6 +10,7 @@ use Monolog\LogRecord;
 /**
  * Class ColoredLineFormatter
  * A formatter that adds ANSI colors to log output for terminal display.
+ * Also includes stack traces for error-level logs.
  */
 class ColoredLineFormatter extends LineFormatter
 {
@@ -33,15 +34,28 @@ class ColoredLineFormatter extends LineFormatter
     private const RESET = "\033[0m";
 
     /**
+     * Dim color for stack trace
+     */
+    private const DIM = "\033[2m";
+
+    /**
+     * Log levels that should include stack traces (300 = WARNING)
+     */
+    private const TRACE_MIN_LEVEL = 300;
+
+    /**
      * Default format with timestamp, level, and message
      */
     private const DEFAULT_FORMAT = "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n";
 
+    private bool $addStackTraces;
+
     public function __construct(
         ?string $format = null,
         ?string $dateFormat = null,
-        bool $allowInlineLineBreaks = false,
-        bool $ignoreEmptyContextAndExtra = true
+        bool $allowInlineLineBreaks = true,
+        bool $ignoreEmptyContextAndExtra = true,
+        bool $includeStacktraces = true
     ) {
         parent::__construct(
             $format ?? self::DEFAULT_FORMAT,
@@ -49,32 +63,155 @@ class ColoredLineFormatter extends LineFormatter
             $allowInlineLineBreaks,
             $ignoreEmptyContextAndExtra
         );
+        $this->addStackTraces = $includeStacktraces;
+        
+        // Enable stack traces in parent formatter for exceptions
+        if ($includeStacktraces) {
+            $this->includeStacktraces(true);
+        }
     }
 
     /**
-     * Format the log record with ANSI colors
+     * Format the log record with ANSI colors and stack traces for errors
      *
      * @param LogRecord|array $record
      * @return string
      */
     public function format(LogRecord|array $record): string
     {
-        // Get level name - handle both Monolog 2.x (array) and 3.x (LogRecord)
+        // Get level info - handle both Monolog 2.x (array) and 3.x (LogRecord)
         if ($record instanceof LogRecord) {
-            // Monolog 3.x: level->name returns 'Info', 'Error', etc.
             $levelName = strtoupper($record->level->name);
+            $levelValue = $record->level->value;
+            $context = $record->context;
         } else {
-            // Monolog 2.x: level_name is array key, already uppercase
             $levelName = $record['level_name'] ?? 'INFO';
+            $levelValue = $record['level'] ?? 200;
+            $context = $record['context'] ?? [];
         }
 
         $color = self::COLORS[$levelName] ?? '';
         $output = parent::format($record);
+
+        // Add stack trace for error-level logs if no exception in context
+        if ($this->addStackTraces && $levelValue >= self::TRACE_MIN_LEVEL) {
+            $hasException = $this->hasException($context);
+            
+            if (!$hasException) {
+                // Generate stack trace for errors without exceptions
+                $trace = $this->generateStackTrace();
+                if ($trace !== '') {
+                    $output = rtrim($output) . "\n" . self::DIM . $trace . self::RESET . "\n";
+                }
+            }
+        }
 
         if ($color !== '') {
             return $color . $output . self::RESET;
         }
 
         return $output;
+    }
+
+    /**
+     * Check if context contains an exception
+     *
+     * @param array $context
+     * @return bool
+     */
+    private function hasException(array $context): bool
+    {
+        foreach ($context as $value) {
+            if ($value instanceof \Throwable) {
+                return true;
+            }
+        }
+        return isset($context['exception']) && $context['exception'] instanceof \Throwable;
+    }
+
+    /**
+     * Generate a stack trace string, excluding internal logging calls
+     *
+     * @return string
+     */
+    private function generateStackTrace(): string
+    {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
+        $lines = [];
+        
+        // Skip internal Monolog/logging frames
+        $skipPrefixes = [
+            'Monolog\\',
+            'CleatSquad\\LogStream\\Logger\\',
+            'Magento\\Framework\\Logger\\',
+        ];
+
+        foreach ($trace as $frame) {
+            $class = $frame['class'] ?? '';
+            
+            // Skip internal logging frames
+            $skip = false;
+            foreach ($skipPrefixes as $prefix) {
+                if (str_starts_with($class, $prefix)) {
+                    $skip = true;
+                    break;
+                }
+            }
+            
+            if ($skip) {
+                continue;
+            }
+            
+            $file = $frame['file'] ?? 'unknown';
+            $line = $frame['line'] ?? 0;
+            $function = $frame['function'] ?? 'unknown';
+            
+            if ($class !== '') {
+                $function = $class . ($frame['type'] ?? '::') . $function;
+            }
+            
+            // Shorten file path for readability
+            $file = $this->shortenPath($file);
+            
+            $lines[] = sprintf("  #%d %s:%d %s()", count($lines), $file, $line, $function);
+            
+            // Limit stack trace depth
+            if (count($lines) >= 8) {
+                break;
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Shorten file path by removing common prefixes
+     *
+     * @param string $path
+     * @return string
+     */
+    private function shortenPath(string $path): string
+    {
+        // Common Magento path prefixes to remove
+        $prefixes = [
+            '/var/www/html/',
+            '/app/',
+        ];
+
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return substr($path, strlen($prefix));
+            }
+        }
+
+        // If path is too long, show only last 3 parts
+        if (strlen($path) > 60) {
+            $parts = explode('/', $path);
+            if (count($parts) > 3) {
+                return '.../' . implode('/', array_slice($parts, -3));
+            }
+        }
+
+        return $path;
     }
 }
