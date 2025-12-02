@@ -11,12 +11,12 @@
     </type>
     <type name="CleatSquad\LogStream\Logger\StdoutHandler">
         <arguments>
-            <argument name="formatter" xsi:type="object">Monolog\Formatter\LineFormatter</argument>
+            <argument name="formatter" xsi:type="object">Monolog\Formatter\JsonFormatter</argument>
         </arguments>
     </type>
     <type name="CleatSquad\LogStream\Logger\StderrHandler">
         <arguments>
-            <argument name="formatter" xsi:type="object">Monolog\Formatter\LineFormatter</argument>
+            <argument name="formatter" xsi:type="object">Monolog\Formatter\JsonFormatter</argument>
         </arguments>
     </type>
 </config>
