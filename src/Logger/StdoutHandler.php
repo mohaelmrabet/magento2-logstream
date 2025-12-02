@@ -8,6 +8,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 
 /**
@@ -32,14 +33,22 @@ class StdoutHandler extends StreamHandler
      * Get the log level from the Magento configuration.
      *
      * @param ScopeConfigInterface $scopeConfig
-     * @return int
+     * @return int|Level
      */
-    private function getConfigLevel(ScopeConfigInterface $scopeConfig): int
+    private function getConfigLevel(ScopeConfigInterface $scopeConfig): int|Level
     {
         $level = $scopeConfig->getValue(
             self::GENERAL_SETTINGS_LOGGING_LOG_LEVEL,
             ScopeInterface::SCOPE_WEBSITE
         );
-        return $level ? (int)$level : Logger::INFO;
+
+        $levelValue = $level ? (int)$level : Logger::INFO;
+
+        // Monolog 3.x uses Level enum, Monolog 2.x uses integers
+        if (class_exists(Level::class)) {
+            return Level::from($levelValue);
+        }
+
+        return $levelValue;
     }
 }
