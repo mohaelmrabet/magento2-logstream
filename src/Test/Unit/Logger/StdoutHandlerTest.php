@@ -4,6 +4,7 @@ namespace CleatSquad\LogStream\Test\Unit\Logger;
 
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Level;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use CleatSquad\LogStream\Logger\StdoutHandler;
 
@@ -14,9 +15,14 @@ use CleatSquad\LogStream\Logger\StdoutHandler;
 class StdoutHandlerTest extends TestCase
 {
     /**
-     * Default INFO log level value
+     * Minimum log level (DEBUG = 100)
      */
-    private const DEFAULT_INFO_LEVEL = 200;
+    private const MIN_LEVEL = 100;
+
+    /**
+     * Maximum log level (INFO = 200)
+     */
+    private const MAX_LEVEL = 200;
 
     private function createStdoutHandler(): StdoutHandler
     {
@@ -38,6 +44,36 @@ class StdoutHandlerTest extends TestCase
         return $level;
     }
 
+    /**
+     * Create a log record for testing (compatible with Monolog 2.x and 3.x)
+     *
+     * @param int $level
+     * @return LogRecord|array
+     */
+    private function createLogRecord(int $level): LogRecord|array
+    {
+        if (class_exists(LogRecord::class)) {
+            return new LogRecord(
+                datetime: new \DateTimeImmutable(),
+                channel: 'test',
+                level: Level::from($level),
+                message: 'Test message',
+                context: [],
+                extra: []
+            );
+        }
+
+        return [
+            'message' => 'Test message',
+            'context' => [],
+            'level' => $level,
+            'level_name' => 'TEST',
+            'channel' => 'test',
+            'datetime' => new \DateTimeImmutable(),
+            'extra' => [],
+        ];
+    }
+
     public function testIsInstanceOfStreamHandler(): void
     {
         $this->assertInstanceOf(StdoutHandler::class, $this->createStdoutHandler());
@@ -51,7 +87,7 @@ class StdoutHandlerTest extends TestCase
     public function testGetLevel(): void
     {
         $handler = $this->createStdoutHandler();
-        $this->assertEquals(self::DEFAULT_INFO_LEVEL, $this->getLevelValue($handler->getLevel()));
+        $this->assertEquals(self::MIN_LEVEL, $this->getLevelValue($handler->getLevel()));
     }
 
     public function testGetBubble(): void
@@ -62,5 +98,33 @@ class StdoutHandlerTest extends TestCase
     public function testGetFormatter(): void
     {
         $this->assertInstanceOf(JsonFormatter::class, $this->createStdoutHandler()->getFormatter());
+    }
+
+    public function testIsHandlingDebugLevel(): void
+    {
+        $handler = $this->createStdoutHandler();
+        $record = $this->createLogRecord(100); // DEBUG
+        $this->assertTrue($handler->isHandling($record));
+    }
+
+    public function testIsHandlingInfoLevel(): void
+    {
+        $handler = $this->createStdoutHandler();
+        $record = $this->createLogRecord(200); // INFO
+        $this->assertTrue($handler->isHandling($record));
+    }
+
+    public function testIsNotHandlingWarningLevel(): void
+    {
+        $handler = $this->createStdoutHandler();
+        $record = $this->createLogRecord(300); // WARNING
+        $this->assertFalse($handler->isHandling($record));
+    }
+
+    public function testIsNotHandlingErrorLevel(): void
+    {
+        $handler = $this->createStdoutHandler();
+        $record = $this->createLogRecord(400); // ERROR
+        $this->assertFalse($handler->isHandling($record));
     }
 }

@@ -6,21 +6,48 @@ namespace CleatSquad\LogStream\Logger;
 
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+use Monolog\LogRecord;
 
 /**
  * Class StderrHandler
  * A handler that writes error log messages to stderr.
+ * Only handles WARNING (300) to EMERGENCY (600) levels.
  */
 class StderrHandler extends StreamHandler
 {
     /**
-     * Default log level value (ERROR = 400)
+     * Minimum log level (WARNING = 300)
      */
-    private const DEFAULT_LOG_LEVEL = 400;
+    private const MIN_LEVEL = 300;
+
+    /**
+     * Maximum log level (EMERGENCY = 600)
+     */
+    private const MAX_LEVEL = 600;
 
     public function __construct(FormatterInterface $formatter)
     {
-        parent::__construct("php://stderr", self::DEFAULT_LOG_LEVEL, false);
+        parent::__construct("php://stderr", self::MIN_LEVEL, false);
         $this->setFormatter($formatter);
+    }
+
+    /**
+     * Check if this handler handles the given log record.
+     * Only handles logs between WARNING (300) and EMERGENCY (600).
+     *
+     * @param LogRecord|array $record
+     * @return bool
+     */
+    public function isHandling(LogRecord|array $record): bool
+    {
+        // Get level value - handle both Monolog 2.x (array) and 3.x (LogRecord)
+        if ($record instanceof LogRecord) {
+            $level = $record->level->value;
+        } else {
+            $level = $record['level'] ?? 0;
+        }
+
+        return $level >= self::MIN_LEVEL && $level <= self::MAX_LEVEL;
     }
 }
