@@ -1,3 +1,4 @@
+---
 name: Code style and static analysis
 
 on:
@@ -22,21 +23,23 @@ jobs:
 
       - name: Create auth.json
         run: |
+          mkdir -p "$HOME/.composer"
           printf '{"http-basic":{"repo.magento.com":{"username":"%s","password":"%s"}}}' \
-            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "auth.json"
-          &&  cat auth.json 
+            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "$HOME/.composer/auth.json"
         env:
           MAGENTO_AUTH_USERNAME: ${{ secrets.MAGENTO_AUTH_USERNAME }}
           MAGENTO_AUTH_PASSWORD: ${{ secrets.MAGENTO_AUTH_PASSWORD }}
 
       - name: Install dependencies
-        run: cat auth.json && composer install --no-progress --no-interaction --prefer-dist
+        run: composer install --no-progress --no-interaction --prefer-dist
 
-      - name: Upload vendor
+      - name: Upload vendor and lock
         uses: actions/upload-artifact@v4
         with:
           name: vendor
-          path: vendor
+          path: |
+            vendor
+            composer.lock
 
   phpstan:
     name: PHPStan
