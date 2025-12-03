@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.1', '8.2', '8.3']
+        php-version: ['8.1', '8.2', '8.3', '8.4']
         monolog-version: ['^2.0', '^3.0']
         exclude:
           # Monolog 3.x requires PHP 8.1+
