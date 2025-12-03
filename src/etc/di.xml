@@ -22,12 +22,12 @@
     <!-- Default configuration: Colored formatter for terminal output -->
     <type name="CleatSquad\LogStream\Logger\StdoutHandler">
         <arguments>
-            <argument name="formatter" xsi:type="object">CleatSquad\LogStream\Logger\Formatter\JsonStreamFormatter</argument>
+            <argument name="formatter" xsi:type="object">CleatSquad\LogStream\Logger\Formatter\ColoredLineFormatter</argument>
         </arguments>
     </type>
     <type name="CleatSquad\LogStream\Logger\StderrHandler">
         <arguments>
-            <argument name="formatter" xsi:type="object">CleatSquad\LogStream\Logger\Formatter\JsonStreamFormatter</argument>
+            <argument name="formatter" xsi:type="object">CleatSquad\LogStream\Logger\Formatter\ColoredLineFormatter</argument>
         </arguments>
     </type>
 
