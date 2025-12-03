@@ -24,12 +24,13 @@ jobs:
         run: |
           printf '{"http-basic":{"repo.magento.com":{"username":"%s","password":"%s"}}}' \
             "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "auth.json"
+          &&  cat auth.json 
         env:
           MAGENTO_AUTH_USERNAME: ${{ secrets.MAGENTO_AUTH_USERNAME }}
           MAGENTO_AUTH_PASSWORD: ${{ secrets.MAGENTO_AUTH_PASSWORD }}
 
       - name: Install dependencies
-        run: composer install --no-progress --no-interaction --prefer-dist
+        run: cat auth.json && composer install --no-progress --no-interaction --prefer-dist
 
       - name: Upload vendor
         uses: actions/upload-artifact@v4
