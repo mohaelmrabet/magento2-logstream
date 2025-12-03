@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+        monolog-version: ['^2.0', '^3.0']
+        exclude:
+          # Monolog 3.x requires PHP 8.1+
+          - php-version: '8.0'
+            monolog-version: '^3.0'
+    
+    name: PHP ${{ matrix.php-version }} / Monolog ${{ matrix.monolog-version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ matrix.php-version }}-${{ matrix.monolog-version }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ matrix.php-version }}-${{ matrix.monolog-version }}-
+            ${{ runner.os }}-composer-${{ matrix.php-version }}-
+            ${{ runner.os }}-composer-
+
+      - name: Remove Magento repository requirement
+        run: composer config --unset repositories.0
+
+      - name: Install Monolog ${{ matrix.monolog-version }}
+        run: composer require monolog/monolog:"${{ matrix.monolog-version }}" --no-update
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
+
+      - name: Run PHPUnit tests
+        run: composer unit-test
+
+  phpstan:
+    runs-on: ubuntu-latest
+    name: PHPStan Static Analysis
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Remove Magento repository requirement
+        run: composer config --unset repositories.0
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
+
+      - name: Run PHPStan
+        run: composer phpstan
+        continue-on-error: true
