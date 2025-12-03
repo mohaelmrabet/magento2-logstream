@@ -27,9 +27,12 @@ jobs:
 
       - name: Create auth.json
         run: |
-          composer config --global http-basic.repo.magento.com \
-            ${{ secrets.MAGENTO_AUTH_USERNAME }} \
-            ${{ secrets.MAGENTO_AUTH_PASSWORD }}
+          mkdir -p "${COMPOSER_HOME:-$HOME/.composer}"
+          printf '{"http-basic":{"repo.magento.com":{"username":"%s","password":"%s"}}}' \
+            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "${COMPOSER_HOME:-$HOME/.composer}/auth.json"
+        env:
+          MAGENTO_AUTH_USERNAME: ${{ secrets.MAGENTO_AUTH_USERNAME }}
+          MAGENTO_AUTH_PASSWORD: ${{ secrets.MAGENTO_AUTH_PASSWORD }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
