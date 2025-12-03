@@ -23,7 +23,7 @@ jobs:
       - name: Create auth.json
         run: |
           printf '{"http-basic":{"repo.magento.com":{"username":"%s","password":"%s"}}}' \
-            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "$auth.json"
+            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "auth.json"
         env:
           MAGENTO_AUTH_USERNAME: ${{ secrets.MAGENTO_AUTH_USERNAME }}
           MAGENTO_AUTH_PASSWORD: ${{ secrets.MAGENTO_AUTH_PASSWORD }}
