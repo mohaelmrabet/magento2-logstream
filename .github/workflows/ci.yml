@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3', '8.4']
+        monolog-version: ['^2.0', '^3.0']
+        exclude:
+          # Monolog 3.x requires PHP 8.1+
+          - php-version: '8.0'
+            monolog-version: '^3.0'
+    
+    name: PHP ${{ matrix.php-version }} / Monolog ${{ matrix.monolog-version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create auth.json
+        run: |
+          mkdir -p "${COMPOSER_HOME:-$HOME/.composer}"
+          printf '{"http-basic":{"repo.magento.com":{"username":"%s","password":"%s"}}}' \
+            "$MAGENTO_AUTH_USERNAME" "$MAGENTO_AUTH_PASSWORD" > "${COMPOSER_HOME:-$HOME/.composer}/auth.json"
+        env:
+          MAGENTO_AUTH_USERNAME: ${{ secrets.MAGENTO_AUTH_USERNAME }}
+          MAGENTO_AUTH_PASSWORD: ${{ secrets.MAGENTO_AUTH_PASSWORD }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ matrix.php-version }}-${{ matrix.monolog-version }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ matrix.php-version }}-${{ matrix.monolog-version }}-
+            ${{ runner.os }}-composer-${{ matrix.php-version }}-
+            ${{ runner.os }}-composer-
+
+      - name: Remove Magento repository requirement
+        run: composer config --unset repositories.0
+
+      - name: Install Monolog ${{ matrix.monolog-version }}
+        run: composer require monolog/monolog:"${{ matrix.monolog-version }}" --no-update
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
+
+      - name: Run PHPUnit tests
+        run: composer unit-test

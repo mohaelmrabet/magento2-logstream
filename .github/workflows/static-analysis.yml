@@ -1,5 +1,10 @@
 name: Code style and static analysis
 
+on:
+  pull_request:
+  push:
+    branches: [master]
+
 jobs:
   setup-deps:
     name: Prepare dependencies
