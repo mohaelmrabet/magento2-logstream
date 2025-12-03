@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 Mohamed EL Mrabet
+ * Copyright (c) 2025 Mohamed EL Mrabet
  * CleatSquad - https://cleatsquad.dev
  *
  * This file is part of the CleatSquad_LogStream module.
@@ -16,31 +16,31 @@ use Monolog\Level;
 use Monolog\LogRecord;
 
 /**
- * Class StdoutHandler
- * A handler that writes log messages to stdout.
- * Only handles DEBUG (100) to INFO (200) levels.
+ * Class StderrHandler
+ * A handler that writes error log messages to stderr.
+ * Only handles WARNING (300) to EMERGENCY (600) levels.
  */
-class StdoutHandler extends StreamHandler
+class StderrHandler extends StreamHandler
 {
     /**
-     * Minimum log level (DEBUG = 100)
+     * Minimum log level (WARNING = 300)
      */
-    private const MIN_LEVEL = 100;
+    private const MIN_LEVEL = 300;
 
     /**
-     * Maximum log level (INFO = 200)
+     * Maximum log level (EMERGENCY = 600)
      */
-    private const MAX_LEVEL = 200;
+    private const MAX_LEVEL = 600;
 
     public function __construct(FormatterInterface $formatter)
     {
-        parent::__construct("php://stdout", self::MIN_LEVEL, false);
+        parent::__construct("php://stderr", self::MIN_LEVEL, false);
         $this->setFormatter($formatter);
     }
 
     /**
      * Check if this handler handles the given log record.
-     * Only handles logs between DEBUG (100) and INFO (200).
+     * Only handles logs between WARNING (300) and EMERGENCY (600).
      *
      * @param LogRecord|array $record
      * @return bool

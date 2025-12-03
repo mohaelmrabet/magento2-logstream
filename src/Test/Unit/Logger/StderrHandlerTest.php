@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 Mohamed EL Mrabet
+ * Copyright (c) 2025 Mohamed EL Mrabet
  * CleatSquad - https://cleatsquad.dev
  *
  * This file is part of the CleatSquad_LogStream module.
@@ -12,28 +12,28 @@ use Monolog\Formatter\JsonFormatter;
 use Monolog\Level;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use CleatSquad\LogStream\Logger\StdoutHandler;
+use CleatSquad\LogStream\Logger\StderrHandler;
 
 /**
- * Class StdoutHandlerTest
- * @covers CleatSquad\LogStream\Logger\StdoutHandler
+ * Class StderrHandlerTest
+ * @covers CleatSquad\LogStream\Logger\StderrHandler
  */
-class StdoutHandlerTest extends TestCase
+class StderrHandlerTest extends TestCase
 {
     /**
-     * Minimum log level (DEBUG = 100)
+     * Minimum log level (WARNING = 300)
      */
-    private const MIN_LEVEL = 100;
+    private const MIN_LEVEL = 300;
 
     /**
-     * Maximum log level (INFO = 200)
+     * Maximum log level (EMERGENCY = 600)
      */
-    private const MAX_LEVEL = 200;
+    private const MAX_LEVEL = 600;
 
-    private function createStdoutHandler(): StdoutHandler
+    private function createStderrHandler(): StderrHandler
     {
         $formatter = new JsonFormatter();
-        return new StdoutHandler($formatter);
+        return new StderrHandler($formatter);
     }
 
     /**
@@ -82,55 +82,62 @@ class StdoutHandlerTest extends TestCase
 
     public function testIsInstanceOfStreamHandler(): void
     {
-        $this->assertInstanceOf(StdoutHandler::class, $this->createStdoutHandler());
+        $this->assertInstanceOf(StderrHandler::class, $this->createStderrHandler());
     }
 
     public function testGetUrl(): void
     {
-        $this->assertEquals('php://stdout', $this->createStdoutHandler()->getUrl());
+        $this->assertEquals('php://stderr', $this->createStderrHandler()->getUrl());
     }
 
     public function testGetLevel(): void
     {
-        $handler = $this->createStdoutHandler();
+        $handler = $this->createStderrHandler();
         $this->assertEquals(self::MIN_LEVEL, $this->getLevelValue($handler->getLevel()));
     }
 
     public function testGetBubble(): void
     {
-        $this->assertFalse($this->createStdoutHandler()->getBubble());
+        $this->assertFalse($this->createStderrHandler()->getBubble());
     }
 
     public function testGetFormatter(): void
     {
-        $this->assertInstanceOf(JsonFormatter::class, $this->createStdoutHandler()->getFormatter());
+        $this->assertInstanceOf(JsonFormatter::class, $this->createStderrHandler()->getFormatter());
     }
 
-    public function testIsHandlingDebugLevel(): void
+    public function testIsNotHandlingDebugLevel(): void
     {
-        $handler = $this->createStdoutHandler();
+        $handler = $this->createStderrHandler();
         $record = $this->createLogRecord(100); // DEBUG
-        $this->assertTrue($handler->isHandling($record));
+        $this->assertFalse($handler->isHandling($record));
     }
 
-    public function testIsHandlingInfoLevel(): void
+    public function testIsNotHandlingInfoLevel(): void
     {
-        $handler = $this->createStdoutHandler();
+        $handler = $this->createStderrHandler();
         $record = $this->createLogRecord(200); // INFO
+        $this->assertFalse($handler->isHandling($record));
+    }
+
+    public function testIsHandlingWarningLevel(): void
+    {
+        $handler = $this->createStderrHandler();
+        $record = $this->createLogRecord(300); // WARNING
         $this->assertTrue($handler->isHandling($record));
     }
 
-    public function testIsNotHandlingWarningLevel(): void
+    public function testIsHandlingErrorLevel(): void
     {
-        $handler = $this->createStdoutHandler();
-        $record = $this->createLogRecord(300); // WARNING
-        $this->assertFalse($handler->isHandling($record));
+        $handler = $this->createStderrHandler();
+        $record = $this->createLogRecord(400); // ERROR
+        $this->assertTrue($handler->isHandling($record));
     }
 
-    public function testIsNotHandlingErrorLevel(): void
+    public function testIsHandlingEmergencyLevel(): void
     {
-        $handler = $this->createStdoutHandler();
-        $record = $this->createLogRecord(400); // ERROR
-        $this->assertFalse($handler->isHandling($record));
+        $handler = $this->createStderrHandler();
+        $record = $this->createLogRecord(600); // EMERGENCY
+        $this->assertTrue($handler->isHandling($record));
     }
 }

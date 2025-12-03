@@ -1,11 +1,18 @@
 <?php
-
+/**
+ * Copyright (c) 2024 Mohamed EL Mrabet
+ * CleatSquad - https://cleatsquad.dev
+ *
+ * This file is part of the CleatSquad_LogStream module.
+ * Licensed under the MIT License. See the LICENSE file in the module root.
+ */
 declare(strict_types=1);
 
 namespace CleatSquad\LogStream\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Framework\Phrase;
+use Monolog\Level;
 use Monolog\Logger;
 
 /**
@@ -22,6 +29,20 @@ class LogLevel implements OptionSourceInterface
      */
     public function toOptionArray(): array
     {
+        // Monolog 3.x uses Level enum, Monolog 2.x uses integer constants
+        if (class_exists(Level::class)) {
+            return [
+                ['value' => Level::Debug->value, 'label' => __('DEBUG')],
+                ['value' => Level::Info->value, 'label' => __('INFO')],
+                ['value' => Level::Notice->value, 'label' => __('NOTICE')],
+                ['value' => Level::Warning->value, 'label' => __('WARNING')],
+                ['value' => Level::Error->value, 'label' => __('ERROR')],
+                ['value' => Level::Critical->value, 'label' => __('CRITICAL')],
+                ['value' => Level::Alert->value, 'label' => __('ALERT')],
+                ['value' => Level::Emergency->value, 'label' => __('EMERGENCY')],
+            ];
+        }
+
         return [
             ['value' => Logger::DEBUG, 'label' => __('DEBUG')],
             ['value' => Logger::INFO, 'label' => __('INFO')],
