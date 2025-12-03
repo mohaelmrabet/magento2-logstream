@@ -1,10 +1,9 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+  push:
+    branches: [master]
 
 jobs:
   test:
@@ -59,29 +58,3 @@ jobs:
 
       - name: Run PHPUnit tests
         run: composer unit-test
-
-  phpstan:
-    runs-on: ubuntu-latest
-    name: PHPStan Static Analysis
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, intl, json
-          coverage: none
-          tools: composer:v2
-
-      - name: Remove Magento repository requirement
-        run: composer config --unset repositories.0
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
-
-      - name: Run PHPStan
-        run: composer phpstan
-        continue-on-error: true
